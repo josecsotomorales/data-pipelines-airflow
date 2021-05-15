@@ -105,7 +105,7 @@ run_quality_checks = DataQualityOperator(
     tables=["songplay", "users", "song", "artist", "time"]
 )
 
-end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
+end_operator = DummyOperator(task_id='stop_execution',  dag=dag)
 
 # Task dependencies
 start_operator >> stage_events_to_redshift >> load_songplays_table
