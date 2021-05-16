@@ -2,6 +2,8 @@ from airflow.hooks.postgres_hook import PostgresHook
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 
+import operator
+
 class DataQualityOperator(BaseOperator):
 
     ui_color = '#89DA59'
@@ -10,22 +12,23 @@ class DataQualityOperator(BaseOperator):
     def __init__(self,
                  redshift_conn_id = "",
                  tables = [],
+                 checks = [],
                  *args, **kwargs):
 
         super(DataQualityOperator, self).__init__(*args, **kwargs)
         
         self.redshift_conn_id = redshift_conn_id
         self.tables = tables
+        self.checks = checks
         
     def execute(self, context):
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)    
         for table in self.tables:
-            records = redshift.get_records(f"SELECT COUNT(*) FROM {table}")        
-            if len(records) < 1 or len(records[0]) < 1:
-                self.log.error(f"{table} returned no results")
-                raise ValueError(f"Data quality check failed. {table} returned no results")
-            num_records = records[0][0]
-            if num_records == 0:
-                self.log.error(f"No records present in destination table {table}")
-                raise ValueError(f"No records present in destination {table}")
-            self.log.info(f"Analyzed table {table} with {num_records} records, checks passing")
+            self.log.info(f"Analyzing Table {table}.")
+            for check in self.checks:
+                records = redshift.get_records(check['test_sql'].format(table=table))
+                if len(records) < 1 or len(records[0]) < 1:
+                    raise ValueError(f"Data quality check failed on table '{table}', returned no results")
+                if not eval(f"{records[0][0]} {check['comparison']} {check['expected_result']}"):
+                    raise ValueError(f"Data quality check failed on table '{table}'")
+                self.log.info(f"Data quality check passed on table {table}.")
