@@ -2,8 +2,7 @@ from datetime import datetime, timedelta
 import os
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
-                                LoadDimensionOperator, DataQualityOperator)
+from operators import (StageToRedshiftOperator, LoadFactOperator, LoadDimensionOperator, DataQualityOperator)
 from helpers import SqlQueries
 
 # AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -31,7 +30,6 @@ start_operator = DummyOperator(task_id='begin_execution',  dag=dag)
 
 stage_events_to_redshift = StageToRedshiftOperator(
     task_id='stage_events',
-    provide_context=False,
     dag=dag,
     table = "staging_events",
     s3_path = "s3://udacity-dend/log_data",
@@ -43,7 +41,6 @@ stage_events_to_redshift = StageToRedshiftOperator(
 
 stage_songs_to_redshift = StageToRedshiftOperator(
     task_id='stage_songs',
-    provide_context=False,
     dag=dag,
     table = "staging_songs",
     s3_path = "s3://udacity-dend/song_data",
